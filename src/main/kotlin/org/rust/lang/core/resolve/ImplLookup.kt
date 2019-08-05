@@ -877,6 +877,7 @@ private sealed class SelectionCandidate {
     object TraitObject : SelectionCandidate()
     /** @see ImplLookup.getHardcodedImpls */
     object HardcodedImpl : SelectionCandidate()
+
     object Closure : SelectionCandidate()
 }
 

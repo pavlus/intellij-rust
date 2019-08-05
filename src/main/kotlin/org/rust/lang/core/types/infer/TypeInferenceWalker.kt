@@ -190,9 +190,12 @@ class RsTypeInferenceWalker(
     fun inferTypeCoercableTo(expr: RsExpr, expected: Ty): Ty =
         expr.inferTypeCoercableTo(expected)
 
-    private fun coerce(element: RsElement, inferred: Ty, expected: Ty): Boolean {
-        return coerceResolved(element, resolveTypeVarsWithObligations(inferred), resolveTypeVarsWithObligations(expected))
-    }
+    private fun coerce(element: RsElement, inferred: Ty, expected: Ty): Boolean =
+        coerceResolved(
+            element,
+            resolveTypeVarsWithObligations(inferred),
+            resolveTypeVarsWithObligations(expected)
+        )
 
     private fun coerceResolved(element: RsElement, inferred: Ty, expected: Ty): Boolean {
         when (val result = tryCoerce(inferred, expected)) {
@@ -649,7 +652,11 @@ class RsTypeInferenceWalker(
         }
     }
 
-    private fun pickSingleMethod(receiver: Ty, variants: List<MethodResolveVariant>, methodCall: RsMethodCall): MethodPick? {
+    private fun pickSingleMethod(
+        receiver: Ty,
+        variants: List<MethodResolveVariant>,
+        methodCall: RsMethodCall
+    ): MethodPick? {
         val picked = run {
             val list = filterAssocItems(variants, methodCall)
 
@@ -905,8 +912,10 @@ class RsTypeInferenceWalker(
                 if (op is OverloadableBinaryOperator) {
                     val rhsTypeVar = TyInfer.TyVar()
                     enforceOverloadedBinopTypes(lhsType, rhsTypeVar, op)
-                    val rhsType = resolveTypeVarsWithObligations(expr.right?.inferTypeCoercableTo(rhsTypeVar)
-                        ?: TyUnknown)
+                    val rhsType = resolveTypeVarsWithObligations(
+                        expr.right?.inferTypeCoercableTo(rhsTypeVar)
+                            ?: TyUnknown
+                    )
 
                     val lhsAdjustment = Adjustment.BorrowReference(TyReference(lhsType, Mutability.IMMUTABLE))
                     ctx.addAdjustment(expr.left, lhsAdjustment)

@@ -34,7 +34,7 @@ fun inferTypesIn(element: RsInferenceContextOwner): RsInferenceResult {
         ?: error("Can not run nested type inference")
 }
 
-sealed class Adjustment(open val target: Ty): TypeFoldable<Adjustment> {
+sealed class Adjustment(open val target: Ty) : TypeFoldable<Adjustment> {
     class Deref(target: Ty) : Adjustment(target) {
         override fun superFoldWith(folder: TypeFolder): Adjustment = Deref(target.foldWith(folder))
         override fun superVisitWith(visitor: TypeVisitor): Boolean = target.visitWith(visitor)
@@ -384,7 +384,7 @@ class RsInferenceContext(
     }
 
     fun canCombineTypes(ty1: Ty, ty2: Ty): Boolean {
-        return probe { combineTypesResolved(shallowResolve(ty1), shallowResolve(ty2)).isOk }
+        return probe { combineTypes(ty1, ty2).isOk }
     }
 
     fun combineTypesIfOk(ty1: Ty, ty2: Ty): Boolean {
@@ -578,7 +578,10 @@ class RsInferenceContext(
         optNormalizeProjectionTypeResolved(resolveTypeVarsIfPossible(projectionTy) as TyProjection, recursionDepth)
 
     /** See [optNormalizeProjectionType] */
-    private fun optNormalizeProjectionTypeResolved(projectionTy: TyProjection, recursionDepth: Int): TyWithObligations<Ty>? {
+    private fun optNormalizeProjectionTypeResolved(
+        projectionTy: TyProjection,
+        recursionDepth: Int
+    ): TyWithObligations<Ty>? {
         if (projectionTy.type is TyInfer.TyVar) return null
 
         return when (val cacheResult = projectionCache.tryStart(projectionTy)) {
