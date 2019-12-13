@@ -50,7 +50,12 @@
     </option>
     <option name="org.rust.GENERATED_ITEM">
         <value>
-            <option name="FOREGROUND" value="727238" />
+            <option name="FOREGROUND" value="727238"/>
+        </value>
+    </option>
+    <option name="org.rust.DEAD_CODE">
+        <value>
+            <option name="FOREGROUND" value="808080"/>
         </value>
     </option>
 </list>
