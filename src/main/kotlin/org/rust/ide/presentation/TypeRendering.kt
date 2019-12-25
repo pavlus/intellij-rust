@@ -7,11 +7,12 @@ package org.rust.ide.presentation
 
 import org.jetbrains.annotations.TestOnly
 import org.rust.lang.core.psi.RsTraitItem
-import org.rust.lang.core.psi.ext.RsGenericDeclaration
-import org.rust.lang.core.psi.ext.RsNamedElement
-import org.rust.lang.core.psi.ext.lifetimeParameters
-import org.rust.lang.core.psi.ext.typeParameters
+import org.rust.lang.core.psi.ext.*
 import org.rust.lang.core.types.BoundElement
+import org.rust.lang.core.types.consts.Const
+import org.rust.lang.core.types.consts.CtConstParameter
+import org.rust.lang.core.types.consts.CtUnknown
+import org.rust.lang.core.types.consts.CtValue
 import org.rust.lang.core.types.regions.ReEarlyBound
 import org.rust.lang.core.types.regions.ReStatic
 import org.rust.lang.core.types.regions.ReUnknown
@@ -49,6 +50,7 @@ private data class TypeRenderer(
     val unknown: String = "<unknown>",
     val anonymous: String = "<anonymous>",
     val unknownLifetime: String = "'<unknown>",
+    val unknownConst: String = "<unknown>",
     val integer: String = "{integer}",
     val float: String = "{float}",
     val includeTypeArguments: Boolean = true,
@@ -91,7 +93,7 @@ private data class TypeRenderer(
             is TySlice -> "[${render(ty.elementType)}]"
 
             is TyTuple -> ty.types.joinToString(", ", "(", ")", transform = render)
-            is TyArray -> "[${render(ty.base)}; ${ty.size ?: unknown}]"
+            is TyArray -> "[${render(ty.base)}; ${render(ty.const)}]"
             is TyReference -> buildString {
                 append('&')
                 if (includeLifetimeArguments && (ty.region is ReEarlyBound || ty.region is ReStatic)) {
@@ -145,6 +147,13 @@ private data class TypeRenderer(
     private fun render(region: Region): String =
         if (region == ReUnknown) unknownLifetime else region.toString()
 
+    private fun render(const: Const, wrapParameterInBraces: Boolean = false): String =
+        when (const) {
+            is CtValue -> const.toString()
+            is CtConstParameter -> if (wrapParameterInBraces) "{ $const }" else const.toString()
+            else -> unknownConst
+        }
+
     private fun formatTrait(trait: BoundElement<RsTraitItem>, render: (Ty) -> String): String = buildString {
         append(trait.element.name ?: return anonymous)
         if (includeTypeArguments) append(formatTraitGenerics(trait, render))
@@ -152,12 +161,9 @@ private data class TypeRenderer(
 
     private fun formatGenerics(adt: TyAdt, render: (Ty) -> String): String {
         val typeArgumentNames = adt.typeArguments.map(render)
-        val regionArgumentNames = if (includeLifetimeArguments) {
-            adt.regionArguments.map { render(it) }
-        } else {
-            emptyList()
-        }
-        val generics = regionArgumentNames + typeArgumentNames
+        val regionArgumentNames = if (includeLifetimeArguments) adt.regionArguments.map { render(it) } else emptyList()
+        val constArgumentNames = adt.constArguments.map { render(it, wrapParameterInBraces = true) }
+        val generics = regionArgumentNames + typeArgumentNames + constArgumentNames
         return if (generics.isEmpty()) "" else generics.joinToString(", ", "<", ">")
     }
 
@@ -201,7 +207,8 @@ private data class TypeRenderer(
         } else {
             emptyList()
         }
-        return regionSubst + tySubst
+        val constSubst = boundElement.element.constParameters.map { render(boundElement.subst[it] ?: CtUnknown) }
+        return regionSubst + tySubst + constSubst
     }
 
     companion object {
@@ -212,6 +219,7 @@ private data class TypeRenderer(
             unknown = "_",
             anonymous = "_",
             unknownLifetime = "'_",
+            unknownConst = "{}",
             integer = "_",
             float = "_"
         )
