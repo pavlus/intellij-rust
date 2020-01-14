@@ -40,6 +40,7 @@ interface CargoWorkspace {
      * obtain workspace members.
      */
     val packages: Collection<Package>
+
     fun findPackage(name: String): Package? = packages.find { it.name == name || it.normName == name }
 
     fun findTargetByCrateRoot(root: VirtualFile): Target?
@@ -74,7 +75,7 @@ interface CargoWorkspace {
 
         val cfgOptions: CfgOptions
 
-        val features: Collection<Feature>
+        val features: FeatureGraph
 
         val workspace: CargoWorkspace
 
@@ -82,6 +83,9 @@ interface CargoWorkspace {
 
         fun findDependency(normName: String): Target? =
             if (this.normName == normName) libTarget else dependencies.find { it.name == normName }?.pkg?.libTarget
+
+        fun syncFeature(feature: String, newState: Boolean)
+        fun syncFeatureSetting(featuresSetting: FeaturesSetting)
     }
 
     /** See docs for [CargoProjectsService] */
@@ -137,16 +141,6 @@ interface CargoWorkspace {
 
     enum class Edition(val presentation: String) {
         EDITION_2015("2015"), EDITION_2018("2018")
-    }
-
-    class Feature(
-        val name: String,
-        val state: FeatureState
-    )
-
-    enum class FeatureState {
-        Enabled,
-        Disabled
     }
 
     companion object {
@@ -308,7 +302,7 @@ private class PackageImpl(
     override var origin: PackageOrigin,
     override val edition: CargoWorkspace.Edition,
     override val cfgOptions: CfgOptions,
-    override val features: Collection<CargoWorkspace.Feature>
+    override val features: FeatureGraph
 ) : CargoWorkspace.Package {
     override val targets = targetsData.map {
         TargetImpl(
@@ -328,6 +322,14 @@ private class PackageImpl(
         get() = Paths.get(VirtualFileManager.extractPath(contentRootUrl))
 
     override val dependencies: MutableList<DependencyImpl> = ArrayList()
+
+    override fun syncFeature(feature: String, newState: Boolean) {
+        features.updateFeature(feature, FeatureState.fromBoolean(newState))
+    }
+
+    override fun syncFeatureSetting(featuresSetting: FeaturesSetting) {
+        features.updateSetting(featuresSetting)
+    }
 
     override fun toString() = "Package(name='$name', contentRootUrl='$contentRootUrl')"
 }
@@ -408,7 +410,7 @@ private fun StandardLibrary.StdCrate.asPackageData(rustcInfo: RustcInfo?): Cargo
         source = null,
         origin = PackageOrigin.STDLIB,
         edition = edition,
-        features = emptyList()
+        features = FeatureGraph.Empty
     )
 }
 

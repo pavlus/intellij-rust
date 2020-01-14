@@ -18,8 +18,10 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.messages.Topic
 import org.rust.cargo.CargoConstants
+import org.rust.cargo.project.settings.RustProjectSettingsService
 import org.rust.cargo.project.settings.rustSettings
 import org.rust.cargo.project.workspace.CargoWorkspace
+import org.rust.cargo.project.workspace.FeaturesSetting
 import org.rust.cargo.toolchain.RustToolchain
 import org.rust.cargo.toolchain.RustcVersion
 import org.rust.ide.notifications.showBalloon
@@ -89,13 +91,17 @@ interface CargoProject : UserDataHolderEx {
 
     val rustcInfo: RustcInfo?
 
+    val userOverriddenFeatures: Map<String, Boolean>
+    val featuresSetting: FeaturesSetting
+
     val workspaceStatus: UpdateStatus
     val stdlibStatus: UpdateStatus
     val rustcInfoStatus: UpdateStatus
 
-    val mergedStatus: UpdateStatus get() = workspaceStatus
-        .merge(stdlibStatus)
-        .merge(rustcInfoStatus)
+    val mergedStatus: UpdateStatus
+        get() = workspaceStatus
+            .merge(stdlibStatus)
+            .merge(rustcInfoStatus)
 
     sealed class UpdateStatus(private val priority: Int) {
         object UpToDate : UpdateStatus(0)
