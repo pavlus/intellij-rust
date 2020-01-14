@@ -828,6 +828,7 @@
 
         <editorNotificationProvider implementation="org.rust.ide.notifications.MissingToolchainNotificationProvider"/>
         <editorNotificationProvider implementation="org.rust.ide.notifications.DetachedFileNotificationProvider"/>
+        <editorNotificationProvider implementation="org.rust.ide.notifications.NoCargoProjectNotificationProvider"/>
 
         <!-- Editor Tab Title Providers -->
 
