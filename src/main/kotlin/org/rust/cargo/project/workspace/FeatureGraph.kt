@@ -41,7 +41,7 @@ enum class FeaturesSetting {
             "All" -> All
             "Default" -> Default
             "NoDefault" -> NoDefault
-            else -> error("unreachable")
+            else -> Default
         }
     }
 }

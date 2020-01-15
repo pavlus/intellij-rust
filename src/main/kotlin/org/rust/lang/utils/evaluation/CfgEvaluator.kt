@@ -95,7 +95,7 @@ class CfgEvaluator(val options: CfgOptions, val features: Map<String, FeatureSta
         else -> Unknown
     }
 
-    private fun evaluateFeature(name: String): ThreeValuedLogic = when (features[name]) {
+    private fun evaluateFeature(name: String): ThreeValuedLogic = when (features[name]) { //TODO: what about stdlib features?
         FeatureState.Enabled -> True
         FeatureState.Disabled -> False
         null -> Unknown

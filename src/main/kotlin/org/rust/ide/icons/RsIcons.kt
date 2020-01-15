@@ -37,6 +37,7 @@ object RsIcons {
     val DOCS_MARK = IconLoader.getIcon("/icons/docsrs.svg")
     val FEATURE_CHECKED_MARK = IconLoader.getIcon("/icons/feature_checked.svg")
     val FEATURE_UNCHECKED_MARK = IconLoader.getIcon("/icons/feature_unchecked.svg")
+    val FEATURES_SETTINGS = AllIcons.General.Settings!!
 
     // Source code elements
 
