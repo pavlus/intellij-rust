@@ -7,7 +7,6 @@ package org.rust.cargo.project.workspace
 
 import org.rust.cargo.project.workspace.FeatureState.Disabled
 import org.rust.cargo.project.workspace.FeatureState.Enabled
-import org.rust.cargo.project.workspace.FeaturesSetting.*
 import org.rust.lang.utils.Node
 import org.rust.lang.utils.PresentableGraph
 import org.rust.lang.utils.PresentableNodeData
@@ -31,21 +30,6 @@ enum class FeatureState {
     }
 }
 
-enum class FeaturesSetting {
-    All,
-    Default,
-    NoDefault;
-
-    companion object {
-        fun fromString(s: String) = when (s) {
-            "All" -> All
-            "Default" -> Default
-            "NoDefault" -> NoDefault
-            else -> Default
-        }
-    }
-}
-
 data class FeatureData(val name: String, var state: FeatureState) : PresentableNodeData {
     override val text: String
         get() = "$name: $state"
@@ -56,8 +40,7 @@ typealias FeatureNode = Node<FeatureData, Unit>
 class FeatureGraph private constructor(
     private val graph: PresentableGraph<FeatureData, Unit>,
     private val featureToNode: Map<String, FeatureNode> = emptyMap(),
-    private val defaultFeatures: Set<String> = emptySet(),
-    private var featureSetting: FeaturesSetting = Default
+    private val defaultFeatures: Set<String> = emptySet()
 ) {
     val state: Map<String, FeatureState>
         get() = buildMap {
@@ -70,21 +53,10 @@ class FeatureGraph private constructor(
         graph.forEachNode { add(it.data.name) }
     }
 
-    fun updateSetting(featureSetting: FeaturesSetting) {
-        this.featureSetting = featureSetting
-
-        when (featureSetting) {
-            All -> graph.forEachNode(::enableFeature)
-
-            Default -> {
-                graph.forEachNode { node ->
-                    if (node.data.name in defaultFeatures) {
-                        enableFeatureTransitively(node)
-                    }
-                }
-            }
-
-            NoDefault -> graph.forEachNode(::disableFeature)
+    fun updateSetting(selectAll: Boolean) {
+        when (selectAll) {
+            true -> graph.forEachNode(::enableFeature)
+            false -> graph.forEachNode(::disableFeature)
         }
     }
 

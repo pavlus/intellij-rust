@@ -85,7 +85,7 @@ interface CargoWorkspace {
             if (this.normName == normName) libTarget else dependencies.find { it.name == normName }?.pkg?.libTarget
 
         fun syncFeature(feature: String, newState: Boolean)
-        fun syncFeatureSetting(featuresSetting: FeaturesSetting)
+        fun syncAllFeatures(selectAll: Boolean)
     }
 
     /** See docs for [CargoProjectsService] */
@@ -327,8 +327,8 @@ private class PackageImpl(
         features.updateFeature(feature, FeatureState.fromBoolean(newState))
     }
 
-    override fun syncFeatureSetting(featuresSetting: FeaturesSetting) {
-        features.updateSetting(featuresSetting)
+    override fun syncAllFeatures(selectAll: Boolean) {
+        features.updateSetting(selectAll)
     }
 
     override fun toString() = "Package(name='$name', contentRootUrl='$contentRootUrl')"

@@ -48,7 +48,6 @@ import org.rust.cargo.project.settings.RustProjectSettingsService
 import org.rust.cargo.project.settings.rustSettings
 import org.rust.cargo.project.settings.toolchain
 import org.rust.cargo.project.workspace.CargoWorkspace
-import org.rust.cargo.project.workspace.FeaturesSetting
 import org.rust.cargo.project.workspace.PackageOrigin
 import org.rust.cargo.project.workspace.StandardLibrary
 import org.rust.cargo.runconfig.command.workingDirectory
@@ -202,13 +201,12 @@ open class CargoProjectsServiceImpl(
         doUpdateFeatures(cargoProject, newProject)
     }
 
-    fun updateFeatures(cargoProject: CargoProjectImpl, featuresSetting: FeaturesSetting) {
-        val userOverriddenFeatures = when (featuresSetting) {
-            FeaturesSetting.All -> cargoProject.userOverriddenFeatures.mapValues { (_, features) ->
+    fun toggleAllFeatures(cargoProject: CargoProjectImpl, selectAll: Boolean) {
+        val userOverriddenFeatures = when (selectAll) {
+            true -> cargoProject.userOverriddenFeatures.mapValues { (_, features) ->
                 features.keys.associateWith { true }
             }
-            FeaturesSetting.Default -> emptyMap()
-            FeaturesSetting.NoDefault -> emptyMap()
+            false -> emptyMap()
         }
         val newProject = cargoProject.copy(userOverriddenFeatures = userOverriddenFeatures)
         doUpdateFeatures(cargoProject, newProject)
@@ -269,7 +267,6 @@ open class CargoProjectsServiceImpl(
             }
 
             cargoProjectElement.setAttribute("USER_FEATURES", featuresText.toString())
-            cargoProjectElement.setAttribute("FEATURES_SETTING", cargoProject.featuresSetting.toString())
 
             state.addContent(cargoProjectElement)
         }
@@ -296,10 +293,7 @@ open class CargoProjectsServiceImpl(
                 }
             }
 
-            val featuresSetting = FeaturesSetting.fromString(cargoProject.getAttributeValue("FEATURES_SETTING")
-                ?: "Default")
             val newProject = CargoProjectImpl(Paths.get(file), this, userOverriddenFeatures = pkgToFeatures)
-            newProject.featuresSetting = featuresSetting
             loaded.add(newProject)
         }
 
@@ -342,8 +336,6 @@ data class CargoProjectImpl(
         val stdlib = stdlib ?: return@lazy rawWorkspace
         rawWorkspace.withStdlib(stdlib, rawWorkspace.cfgOptions, rustcInfo)
     }
-
-    override var featuresSetting: FeaturesSetting = FeaturesSetting.Default
 
     override val presentableName: String
         get() = workingDirectory.fileName.toString()

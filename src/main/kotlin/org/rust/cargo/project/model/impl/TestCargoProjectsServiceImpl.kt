@@ -12,7 +12,6 @@ import org.rust.cargo.CfgOptions
 import org.rust.cargo.project.model.CargoProject
 import org.rust.cargo.project.model.RustcInfo
 import org.rust.cargo.project.workspace.CargoWorkspace
-import org.rust.cargo.project.workspace.FeaturesSetting
 import org.rust.openapiext.pathAsPath
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit

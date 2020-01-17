@@ -23,7 +23,6 @@ import org.rust.cargo.project.model.impl.CargoProjectImpl
 import org.rust.cargo.project.model.impl.CargoProjectsServiceImpl
 import org.rust.cargo.project.workspace.CargoWorkspace
 import org.rust.cargo.project.workspace.FeatureState
-import org.rust.cargo.project.workspace.FeaturesSetting
 import org.rust.cargo.project.workspace.PackageOrigin
 import org.rust.ide.icons.RsIcons
 import org.rust.lang.core.psi.ext.findCargoPackage
@@ -151,8 +150,8 @@ private fun createActionGroupPopup(
     cargoProjectsService: CargoProjectsServiceImpl
 ): JBPopup {
     val actions = listOf(
-        FeaturesSettingsCheckboxAction(FeaturesSetting.All, cargoProject, cargoPackage, cargoProjectsService),
-        FeaturesSettingsCheckboxAction(FeaturesSetting.NoDefault, cargoProject, cargoPackage, cargoProjectsService)
+        FeaturesSettingsCheckboxAction(true, cargoProject, cargoPackage, cargoProjectsService),
+        FeaturesSettingsCheckboxAction(false, cargoProject, cargoPackage, cargoProjectsService)
     )
     val group = DefaultActionGroup(actions)
     val context = SimpleDataContext.getProjectContext(null)
@@ -161,25 +160,24 @@ private fun createActionGroupPopup(
 }
 
 private class FeaturesSettingsCheckboxAction(
-    private val setting: FeaturesSetting,
+    private val selectAll: Boolean,
     private val cargoProject: CargoProjectImpl,
     private val cargoPackage: CargoWorkspace.Package,
     private val cargoProjectsService: CargoProjectsServiceImpl
 ) : AnAction() {
 
     init {
-        val text = when (setting) {
-            FeaturesSetting.All -> "Select all"
-            FeaturesSetting.NoDefault -> "Select none"
-            else -> error("unreachable")
+        val text = when (selectAll) {
+            true -> "Select all"
+            false -> "Select none"
         }
         templatePresentation.description = text
         templatePresentation.text = text
     }
 
     override fun actionPerformed(e: AnActionEvent) {
-        cargoPackage.syncFeatureSetting(setting)
-        cargoProjectsService.updateFeatures(cargoProject, setting)
+        cargoPackage.syncAllFeatures(selectAll)
+        cargoProjectsService.toggleAllFeatures(cargoProject, selectAll)
 
         runWriteAction {
             DaemonCodeAnalyzer.getInstance(cargoProject.project).restart()
