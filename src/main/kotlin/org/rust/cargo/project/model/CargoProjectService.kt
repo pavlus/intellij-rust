@@ -91,7 +91,7 @@ interface CargoProject : UserDataHolderEx {
 
     val rustcInfo: RustcInfo?
 
-    val userOverriddenFeatures: Map<String, Boolean>
+    val userOverriddenFeatures: Map<String, Map<String, Boolean>>
     val featuresSetting: FeaturesSetting
 
     val workspaceStatus: UpdateStatus

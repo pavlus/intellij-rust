@@ -57,7 +57,8 @@ class CargoFeatureLineMarkerProvider : LineMarkerProvider {
 
             if (cargoPackage.origin == PackageOrigin.WORKSPACE) {
                 // sync old state
-                for ((feature, state) in cargoProject.userOverriddenFeatures) {
+                val userOverriddenFeatures = cargoProject.userOverriddenFeatures[cargoPackage.toString()].orEmpty()
+                for ((feature, state) in userOverriddenFeatures) {
                     cargoPackage.syncFeature(feature, state)
                 }
 
@@ -74,9 +75,7 @@ class CargoFeatureLineMarkerProvider : LineMarkerProvider {
                     result.add(featureLineMarkerInfo)
                 }
 
-                val settingsLineMarkerInfo = genSettingsLineMarkerInfo(
-                    element.header, cargoProjectsService
-                )
+                val settingsLineMarkerInfo = genSettingsLineMarkerInfo(element.header, cargoProjectsService)
                 result.add(settingsLineMarkerInfo)
             }
         }
@@ -100,7 +99,7 @@ class CargoFeatureLineMarkerProvider : LineMarkerProvider {
         val toggleFeature = {
             val oldState = cargoPackage.features.state.getOrDefault(name, FeatureState.Disabled).toBoolean()
             val newState = !oldState
-            cargoProjectsService.updateFeature(cargoProject, name, newState)
+            cargoProjectsService.updateFeature(cargoProject, cargoPackage, name, newState)
             cargoPackage.syncFeature(name, newState)
         }
 

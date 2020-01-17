@@ -11,7 +11,6 @@ import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
@@ -195,16 +194,19 @@ open class CargoProjectsServiceImpl(
         }
     }
 
-    fun updateFeature(cargoProject: CargoProjectImpl, name: String, newState: Boolean) {
-        val newFeatures = cargoProject.userOverriddenFeatures.toMutableMap()
-        newFeatures[name] = newState
-        val newProject = cargoProject.copy(userOverriddenFeatures = newFeatures)
+    fun updateFeature(cargoProject: CargoProjectImpl, cargoPackage: CargoWorkspace.Package, name: String, newState: Boolean) {
+        val packageToFeatures = cargoProject.userOverriddenFeatures.toMutableMap()
+        val featureToState = packageToFeatures.getOrPut(cargoPackage.toString(), ::hashMapOf).toMutableMap()
+        featureToState[name] = newState
+        val newProject = cargoProject.copy(userOverriddenFeatures = packageToFeatures)
         doUpdateFeatures(cargoProject, newProject)
     }
 
     fun updateFeatures(cargoProject: CargoProjectImpl, featuresSetting: FeaturesSetting) {
         val userOverriddenFeatures = when (featuresSetting) {
-            FeaturesSetting.All -> cargoProject.userOverriddenFeatures.keys.associateWith { true }
+            FeaturesSetting.All -> cargoProject.userOverriddenFeatures.mapValues { (_, features) ->
+                features.keys.associateWith { true }
+            }
             FeaturesSetting.Default -> emptyMap()
             FeaturesSetting.NoDefault -> emptyMap()
         }
@@ -259,8 +261,11 @@ open class CargoProjectsServiceImpl(
             cargoProjectElement.setAttribute("FILE", cargoProject.manifest.systemIndependentPath)
 
             val featuresText = StringBuilder()
-            for (feature in cargoProject.userOverriddenFeatures) {
-                featuresText.append("${feature.key} = ${feature.value}\n")
+            for ((pkg, features) in cargoProject.userOverriddenFeatures) {
+                featuresText.append("PACKAGE: $pkg")
+                for ((name, value) in features) {
+                    featuresText.append("$name = $value\n")
+                }
             }
 
             cargoProjectElement.setAttribute("USER_FEATURES", featuresText.toString())
@@ -277,15 +282,23 @@ open class CargoProjectsServiceImpl(
 
         for (cargoProject in cargoProjects) {
             val file = cargoProject.getAttributeValue("FILE")
+
             val featuresAttr = cargoProject.getAttributeValue("USER_FEATURES")
-            val rawFeatures = featuresAttr?.split("\n")?.filter { it.isNotBlank() }.orEmpty()
-            val features = rawFeatures.associate {
-                val (name, value) = it.split(" = ")
-                name to value.toBoolean()
+
+            val pkgToFeatures = hashMapOf<String, HashMap<String, Boolean>>()
+            var currentPkg = ""
+            for (line in featuresAttr.lines()) {
+                if (line.startsWith("PACKAGE: ")) {
+                    currentPkg = line.substringAfter("PACKAGE: ")
+                } else {
+                    val (name, value) = line.split(" = ")
+                    pkgToFeatures.getOrPut(currentPkg, ::hashMapOf)[name] = value.toBoolean()
+                }
             }
+
             val featuresSetting = FeaturesSetting.fromString(cargoProject.getAttributeValue("FEATURES_SETTING")
                 ?: "Default")
-            val newProject = CargoProjectImpl(Paths.get(file), this, userOverriddenFeatures = features)
+            val newProject = CargoProjectImpl(Paths.get(file), this, userOverriddenFeatures = pkgToFeatures)
             newProject.featuresSetting = featuresSetting
             loaded.add(newProject)
         }
@@ -314,7 +327,7 @@ open class CargoProjectsServiceImpl(
 data class CargoProjectImpl(
     override val manifest: Path,
     private val projectService: CargoProjectsServiceImpl,
-    override val userOverriddenFeatures: Map<String, Boolean> = hashMapOf(), // Package?
+    override val userOverriddenFeatures: Map<String, Map<String, Boolean>> = hashMapOf(), // Package -> Features
     private val rawWorkspace: CargoWorkspace? = null,
     private val stdlib: StandardLibrary? = null,
     override val rustcInfo: RustcInfo? = null,
